@@ -1,6 +1,20 @@
 public abstract class Dex {
-    public static final SHARING_RULE DEFAULT_SHARING_RULE = SHARING_RULE.INHERITED_SHARING;
-    public static final System.AccessLevel DEFAULT_ACCESS_LEVEL = System.AccessLevel.SYSTEM_MODE;
+    public static final SHARING_RULE DEFAULT_SHARING_RULE = SHARING_RULE.WITH_SHARING;
+    public static final System.AccessLevel DEFAULT_ACCESS_LEVEL = System.AccessLevel.USER_MODE;
+
+    // TODO: Add custom result type for queries
+    // TODO: Add DML support
+    // TODO: Combine dml statements where possible.
+    //  Salesforce can support up to 10 SObjectTypes in a single statement
+    // TODO: Add support for parent-child relationship inserts
+    // TODO: add interface to allow mocking dml statements and responses
+
+    // Database.SaveResult - insert, update
+    // Database.UpsertResult - upsert
+    // Database.DeleteResult - delete
+    // Database.UndeleteResult - undelete
+    // Database.EmptyRecycleBinResult - emptyRecyclingBin
+    // Database.rollback - Database.SavePoint
 
     public enum SHARING_RULE {
         INHERITED_SHARING,
@@ -8,26 +22,31 @@ public abstract class Dex {
         WITHOUT_SHARING
     }
 
-    private final static Map<SHARING_RULE, ISharingRepo> sharingRuleRepos =
-            new Map<SHARING_RULE, ISharingRepo>{
+    private final static Map<SHARING_RULE, IRepo> sharingRuleRepos =
+            new Map<SHARING_RULE, IRepo>{
                     SHARING_RULE.INHERITED_SHARING => new InheritedSharingRepo(),
                     SHARING_RULE.WITHOUT_SHARING => new WithoutSharingRepo(),
                     SHARING_RULE.WITH_SHARING => new WithSharingRepo()
             };
 
-    private static IRepo instance;
-
     private static IRepo getRepo() {
-        if (instance == null) {
-            instance = new Repo();
-        }
+        return sharingRuleRepos.get(DEFAULT_SHARING_RULE);
+    }
 
-        return instance;
+    private static IRepo getRepo(SHARING_RULE sharingRule) {
+        return sharingRuleRepos.get(sharingRule);
     }
 
     @TestVisible
     private static void setMock(IRepo mockRepo) {
-        instance = mockRepo;
+        for(SHARING_RULE sharingRule : sharingRuleRepos.keySet()) {
+            sharingRuleRepos.put(sharingRule, mockRepo);
+        }
+    }
+
+    @TestVisible
+    private static void setMock(IRepo mockRepo, SHARING_RULE sharingRule) {
+        sharingRuleRepos.put(sharingRule, mockRepo);
     }
 
     public static Object get(String query) {
@@ -42,27 +61,8 @@ public abstract class Dex {
         return getRepo().get(query, accessLevel);
     }
 
-    public static Object get(String query, SHARING_RULE sharingRule) {
-        return getRepo().get(query, sharingRule);
-    }
-
     public static Object get(String query, Map<String, Object> binds, System.AccessLevel accessLevel) {
-        return getRepo().get(query, binds, accessLevel, DEFAULT_SHARING_RULE);
-    }
-
-    public static Object get(String query, Map<String, Object> binds, SHARING_RULE sharingRule) {
-        return getRepo().get(query, binds, sharingRule);
-    }
-
-    public static Object get(
-            String query,
-            Map<String, Object> binds,
-            System.AccessLevel accessLevel,
-            SHARING_RULE sharingRule
-    ) {
-        Object[] results = getRepo().getAll(query, binds, accessLevel, sharingRule);
-
-        return results.isEmpty() ? null : results.get(0);
+        return getRepo().get(query, binds, accessLevel);
     }
 
     public static Object[] getAll(
@@ -83,7 +83,7 @@ public abstract class Dex {
     }
 
     public static Object[] getAll(String query, SHARING_RULE sharingRule) {
-        return getRepo().getAll(query, sharingRule);
+        return getRepo(sharingRule).getAll(query);
     }
 
     public static Object[] getAll(
@@ -94,93 +94,50 @@ public abstract class Dex {
         return getRepo().getAll(query, binds, accessLevel);
     }
 
-    public static Object[] getAll(
-            String query,
-            Map<String, Object> binds,
-            SHARING_RULE sharingRule
-    ) {
-        return getRepo().getAll(query, binds, sharingRule);
+    public static void insertAll(SObject[] records) {
+        getRepo().insertAll(records);
     }
 
-    public static Object[] getAll(
-            String query,
-            Map<String, Object> binds,
-            System.AccessLevel accessLevel,
-            SHARING_RULE sharingRule
-    ) {
-        return getRepo().getAll(
-                query,
-                binds,
-                accessLevel,
-                sharingRule
-        );
+    public static void updateAll(SObject[] records) {
+        getRepo().updateAll(records);
     }
 
-    public static Database.QueryLocator getQueryLocator(
-            String query
-    ) {
-        return getRepo().getQueryLocator(query);
+    public static void upsertAll(SObject[] records) {
+        getRepo().upsertAll(records);
     }
 
-    public static Database.QueryLocator getQueryLocator(
-            String query,
-            Map<String, Object> binds
-    ) {
-        return getRepo().getQueryLocator(query, binds);
+    public static void softDeleteAll(SObject[] records) {
+        getRepo().softDeleteAll(records);
     }
 
-    public static Database.QueryLocator getQueryLocator(
-            String query,
-            SHARING_RULE sharingRule
-    ) {
-        return getRepo().getQueryLocator(query, sharingRule);
+    public static void hardDeleteAll(SObject[] records) {
+        getRepo().hardDeleteAll(records);
     }
 
-    public static Database.QueryLocator getQueryLocator(
-            String query,
-            System.AccessLevel accessLevel
-    ) {
-        return getRepo().getQueryLocator(query, accessLevel);
+    public static void undeleteAll(SObject[] records) {
+        getRepo().undeleteAll(records);
     }
 
+    private virtual class Repo implements IRepo {
 
-    public static Database.QueryLocator getQueryLocator(
-            String query,
-            Map<String, Object> binds,
-            System.AccessLevel accessLevel
-    ) {
-        return getRepo().getQueryLocator(query, binds, accessLevel);
-    }
-
-    public static Database.QueryLocator getQueryLocator(
-            String query,
-            Map<String, Object> binds,
-            SHARING_RULE sharingRule
-    ) {
-        return getRepo().getQueryLocator(query, binds, sharingRule);
-    }
-
-    public static Database.QueryLocator getQueryLocator(
-            String query,
-            Map<String, Object> binds,
-            System.AccessLevel accessLevel,
-            SHARING_RULE sharingRule
-    ) {
-        return getRepo().getQueryLocator(
-                query,
-                binds,
-                accessLevel,
-                sharingRule
-        );
-    }
-
-    private class Repo implements IRepo {
-        public Object get(String query) {
-            return this.get(query, new Map<String, Object>());
+        public Object get(
+                String query
+        ) {
+            return Dex.queryResults(Database.query(query, DEFAULT_ACCESS_LEVEL));
         }
 
-        public Object get(String query, Map<String, Object> binds) {
-            return this.get(query, binds, Dex.DEFAULT_ACCESS_LEVEL);
+        public Object get(
+                String query,
+                Map<String, Object> binds
+        ) {
+            return Dex.queryResults(Database.queryWithBinds(query, binds, DEFAULT_ACCESS_LEVEL));
+        }
+
+        public Object get(
+                String query,
+                System.AccessLevel accessLevel
+        ) {
+            return Dex.queryResults(Database.query(query, accessLevel));
         }
 
         public Object get(
@@ -188,46 +145,7 @@ public abstract class Dex {
                 Map<String, Object> binds,
                 System.AccessLevel accessLevel
         ) {
-            return this.get(query, binds, accessLevel, Dex.DEFAULT_SHARING_RULE);
-        }
-
-        public Object get(
-                String query,
-                Map<String, Object> binds,
-                Dex.SHARING_RULE sharingRule
-        ) {
-            return this.get(query, binds, Dex.DEFAULT_ACCESS_LEVEL, sharingRule);
-        }
-
-        public Object get(
-                String query,
-                Dex.SHARING_RULE sharingRule
-        ) {
-            return this.get(
-                    query,
-                    new Map<String, Object>(),
-                    sharingRule
-            );
-        }
-
-        public Object get(
-                String query,
-                System.AccessLevel accessLevel
-        ) {
-            return this.get(
-                    query,
-                    new Map<String, Object>(),
-                    accessLevel
-            );
-        }
-
-        public Object get(
-                String query,
-                Map<String, Object> binds,
-                System.AccessLevel accessLevel,
-                Dex.SHARING_RULE sharingRule
-        ) {
-            Object[] results = this.getAll(query, binds, accessLevel, sharingRule);
+            Object[] results = Dex.queryResults(Database.queryWithBinds(query, binds, accessLevel));
 
             return results.isEmpty() ? null : results.get(0);
         }
@@ -235,36 +153,21 @@ public abstract class Dex {
         public Object[] getAll(
                 String query
         ) {
-            return this.getAll(query, new Map<String, Object>());
+            return Dex.queryResults(Database.query(query, Dex.DEFAULT_ACCESS_LEVEL));
         }
 
         public Object[] getAll(
                 String query,
                 Map<String, Object> binds
         ) {
-            return this.getAll(query, binds, Dex.DEFAULT_ACCESS_LEVEL);
-        }
-
-        public Object[] getAll(
-                String query,
-                Dex.SHARING_RULE sharingRule
-        ) {
-            return this.getAll(
-                    query,
-                    new Map<String, Object>(),
-                    sharingRule
-            );
+            return Dex.queryResults(Database.queryWithBinds(query, binds, Dex.DEFAULT_ACCESS_LEVEL));
         }
 
         public Object[] getAll(
                 String query,
                 System.AccessLevel accessLevel
         ) {
-            return this.getAll(
-                    query,
-                    new Map<String, Object>(),
-                    accessLevel
-            );
+            return Dex.queryResults(Database.query(query, accessLevel));
         }
 
         public Object[] getAll(
@@ -272,102 +175,61 @@ public abstract class Dex {
                 Map<String, Object> binds,
                 System.AccessLevel accessLevel
         ) {
-            return this.getAll(query, binds, accessLevel, Dex.DEFAULT_SHARING_RULE);
+            return Dex.queryResults(Database.queryWithBinds(query, binds, accessLevel));
         }
 
-        public Object[] getAll(
-                String query,
-                Map<String, Object> binds,
-                Dex.SHARING_RULE sharingRule
-        ) {
-            return this.getAll(query, binds, Dex.DEFAULT_ACCESS_LEVEL, sharingRule);
+        public void insertAll(SObject[] records) {
+            records.sort();
+            Database.insert(records);
         }
 
-        public Object[] getAll(
-                String query,
-                Map<String, Object> binds,
-                System.AccessLevel accessLevel,
-                Dex.SHARING_RULE sharingRule
-        ) {
-            return Dex.queryResults(
-                    Dex.getSharingDatabase(sharingRule).getAll(
-                            query,
-                            binds,
-                            accessLevel
-                    ));
+        public void updateAll(SObject[] records) {
+            records.sort();
+            Database.update(records);
         }
 
-        public Database.QueryLocator getQueryLocator(
-                String query
-        ) {
-            return this.getQueryLocator(query, new Map<String, Object>());
+        public void upsertAll(SObject[] records) {
+            records.sort();
+            Database.upsert(records);
         }
 
-        public Database.QueryLocator getQueryLocator(
-                String query,
-                Map<String, Object> binds
-        ) {
-            return this.getQueryLocator(query, binds, Dex.DEFAULT_ACCESS_LEVEL);
+        public void softDeleteAll(SObject[] records) {
+            records.sort();
+            Database.delete(records);
         }
 
-        public Database.QueryLocator getQueryLocator(
-                String query,
-                SHARING_RULE sharingRule
-        ) {
-            return this.getQueryLocator(query, new Map<String, Object>(), sharingRule);
+        public void hardDeleteAll(SObject[] records) {
+            this.softDeleteAll(records);
+            Database.emptyRecycleBin(records);
         }
 
-        public Database.QueryLocator getQueryLocator(
-                String query,
-                System.AccessLevel accessLevel
-        ) {
-            return this.getQueryLocator(query, new Map<String, Object>(), accessLevel);
+        public void undeleteAll(SObject[] records) {
+            records.sort();
+            Database.undelete(records);
         }
 
+        private Map<Integer, SObject[]> chunkRecords(SObject[] records) {
+            records.sort();
 
-        public Database.QueryLocator getQueryLocator(
-                String query,
-                Map<String, Object> binds,
-                System.AccessLevel accessLevel
-        ) {
-            return this.getQueryLocator(
-                    query,
-                    binds,
-                    accessLevel,
-                    Dex.DEFAULT_SHARING_RULE
-            );
+            Map<Integer, SObject[]> chunks = new Map<Integer, SObject[]>();
+            SObjectType[] sObjectTypes = new SObjectType[]{};
+
+            for(SObject record : records) {
+                if(!sObjectTypes.contains(record.getSObjectType())) {
+                    sObjectTypes.add(record.getSObjectType());
+                }
+            }
+
+            if(sObjectTypes.size() <= 10) {
+                chunks.put(0, records);
+                return chunks;
+            }
+
+            // Create chunks of 10 SObjectTypes
+
+            return chunks;
+
         }
-
-        public Database.QueryLocator getQueryLocator(
-                String query,
-                Map<String, Object> binds,
-                Dex.SHARING_RULE sharingRule
-        ) {
-            return this.getQueryLocator(
-                    query,
-                    binds,
-                    Dex.DEFAULT_ACCESS_LEVEL,
-                    sharingRule
-            );
-        }
-
-        public Database.QueryLocator getQueryLocator(
-                String query,
-                Map<String, Object> binds,
-                System.AccessLevel accessLevel,
-                Dex.SHARING_RULE sharingRule
-        ) {
-            return Dex.getSharingDatabase(sharingRule).getQueryLocator(
-                    query,
-                    binds,
-                    accessLevel
-            );
-        }
-    }
-
-    @TestVisible
-    private static ISharingRepo getSharingDatabase(SHARING_RULE sharingRule) {
-        return sharingRuleRepos.get(sharingRule);
     }
 
     private static Object[] queryResults(SObject[] systemResults) {
@@ -385,29 +247,13 @@ public abstract class Dex {
     }
 
     @TestVisible
-    private interface ISharingRepo {
-        SObject[] getAll(String query, Map<String, Object> binds, System.AccessLevel accessLevel);
-        Database.QueryLocator getQueryLocator(String query, Map<String, Object> binds, System.AccessLevel accessLevel);
-    }
-
-    private virtual class SharingRepo implements ISharingRepo {
-        public SObject[] getAll(String query, Map<String, Object> binds, System.AccessLevel accessLevel) {
-            return System.Database.queryWithBinds(query, binds, accessLevel);
-        }
-
-        public Database.QueryLocator getQueryLocator(String query, Map<String, Object> binds, System.AccessLevel accessLevel) {
-            return System.Database.getQueryLocatorWithBinds(query, binds, accessLevel);
-        }
-    }
+    private with sharing class WithSharingRepo extends Repo { }
 
     @TestVisible
-    private with sharing class WithSharingRepo extends SharingRepo { }
+    private without sharing class WithoutSharingRepo extends Repo { }
 
     @TestVisible
-    private without sharing class WithoutSharingRepo extends SharingRepo { }
-
-    @TestVisible
-    private inherited sharing class InheritedSharingRepo extends SharingRepo { }
+    private inherited sharing class InheritedSharingRepo extends Repo { }
 
     public class AggregateResult {
         public final Map<String, Object> data;
@@ -447,22 +293,7 @@ public abstract class Dex {
         );
         Object get(
                 String query,
-                Map<String, Object> binds,
-                Dex.SHARING_RULE sharingRule
-        );
-        Object get(
-                String query,
                 System.AccessLevel accessLevel
-        );
-        Object get(
-                String query,
-                Dex.SHARING_RULE sharingRule
-        );
-        Object get(
-                String query,
-                Map<String, Object> binds,
-                System.AccessLevel accessLevel,
-                Dex.SHARING_RULE sharingRule
         );
         Object[] getAll(
                 String query
@@ -478,55 +309,95 @@ public abstract class Dex {
         );
         Object[] getAll(
                 String query,
-                Map<String, Object> binds,
-                Dex.SHARING_RULE sharingRule
-        );
-        Object[] getAll(
-                String query,
                 System.AccessLevel accessLevel
         );
-        Object[] getAll(
-                String query,
-                Dex.SHARING_RULE sharingRule
-        );
-        Object[] getAll(
-                String query,
-                Map<String, Object> binds,
-                System.AccessLevel accessLevel,
-                Dex.SHARING_RULE sharingRule
-        );
-        Database.QueryLocator getQueryLocator(
-                String query
-        );
-        Database.QueryLocator getQueryLocator(
-                String query,
-                Map<String, Object> binds
-        );
-        Database.QueryLocator getQueryLocator(
-                String query,
-                Map<String, Object> binds,
-                System.AccessLevel accessLevel
-        );
-        Database.QueryLocator getQueryLocator(
-                String query,
-                Map<String, Object> binds,
-                Dex.SHARING_RULE sharingRule
-        );
-        Database.QueryLocator getQueryLocator(
-                String query,
-                System.AccessLevel accessLevel
-        );
-        Database.QueryLocator getQueryLocator(
-                String query,
-                Dex.SHARING_RULE sharingRule
-        );
-        Database.QueryLocator getQueryLocator(
-                String query,
-                Map<String, Object> binds,
-                System.AccessLevel accessLevel,
-                Dex.SHARING_RULE sharingRule
-        );
+        void insertAll(SObject[] records);
+        void updateAll(SObject[] records);
+        void upsertAll(SObject[] records);
+        void softDeleteAll(SObject[] records);
+        void hardDeleteAll(SObject[] records);
+        void undeleteAll(SObject[] records);
+    }
 
+
+    public enum DmlOperation {
+        OP_INSERT,
+        OP_UPDATE,
+        OP_UPSERT,
+        OP_SOFT_DELETE,
+        OP_HARD_DELETE,
+        OP_UNDELETE
+    }
+
+    public class Multi {
+        private Map<Dex.DmlOperation, SObject[]> operations =
+                new Map<Dex.DmlOperation, SObject[]>();
+
+
+        public void insertAll(SObject[] records) {
+            this.addOperation(records, Dex.DmlOperation.OP_INSERT);
+        }
+
+        public void updateAll(SObject[] records) {
+            this.addOperation(records, Dex.DmlOperation.OP_UPDATE);
+        }
+
+        public void upsertAll(SObject[] records) {
+            this.addOperation(records, Dex.DmlOperation.OP_UPSERT);
+        }
+
+        public void softDeleteAll(SObject[] records) {
+            this.addOperation(records, Dex.DmlOperation.OP_SOFT_DELETE);
+        }
+
+        public void hardDeleteAll(SObject[] records) {
+            this.addOperation(records, Dex.DmlOperation.OP_HARD_DELETE);
+        }
+
+        public void undeleteAll(SObject[] records) {
+            this.addOperation(records, Dex.DmlOperation.OP_UNDELETE);
+        }
+
+        public void execute() {
+            Dex.DmlOperation[] operations = Dex.DmlOperation.values();
+
+            for(Dex.DmlOperation operation : operations) {
+                SObject[] records = this.operations.get(operation);
+
+                if(records == null) {
+                    continue;
+                }
+
+                switch on operation {
+                    when OP_INSERT {
+                        Dex.insertAll(records);
+                    }
+                    when OP_UPDATE {
+                        Dex.updateAll(records);
+                    }
+                    when OP_UPSERT {
+                        Dex.upsertAll(records);
+                    }
+                    when OP_SOFT_DELETE {
+                        Dex.softDeleteAll(records);
+                    }
+                    when OP_HARD_DELETE {
+                        Dex.hardDeleteAll(records);
+                    }
+                    when OP_UNDELETE {
+                        Dex.undeleteAll(records);
+                    }
+                }
+            }
+        }
+
+        private void addOperation(SObject[] records, Dex.DmlOperation operation) {
+            if(!operations.containsKey(operation)) {
+                operations.put(operation, new SObject[]{});
+            }
+
+            operations.get(operation).addAll(records);
+        }
     }
 
 }
