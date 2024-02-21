@@ -1,12 +1,12 @@
 {
-  "packageDirectories": [
-    {
-      "path": "src",
-      "default": true
-    }
-  ],
-  "name": "dex",
-  "namespace": "",
-  "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "59.0"
+	"packageDirectories": [
+		{
+			"path": "src",
+			"default": true
+		}
+	],
+	"name": "dex",
+	"namespace": "",
+	"sfdcLoginUrl": "https://login.salesforce.com",
+	"sourceApiVersion": "59.0"
 }

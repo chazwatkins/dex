@@ -1,247 +1,230 @@
 @IsTest(IsParallel=true)
 private class DexTest {
-    @IsTest
-    static void defaultSharingRuleShouldBeInheritedSharing() {
-        System.Assert.areEqual(
-                Dex.DEFAULT_SHARING_RULE,
-                Dex.SHARING_RULE.INHERITED_SHARING
-        );
-    }
+	@IsTest
+	static void defaultSharingRuleShouldBeInheritedSharing() {
+		System.Assert.areEqual(
+			Dex.DEFAULT_SHARING_RULE,
+			Dex.SHARING_RULE.INHERITED_SHARING
+		);
+	}
 
-    @IsTest
-    static void defaultAccessLevelShouldBeSystemMode() {
-        System.Assert.areEqual(
-                Dex.DEFAULT_ACCESS_LEVEL,
-                System.AccessLevel.SYSTEM_MODE
-        );
-    }
+	@IsTest
+	static void defaultAccessLevelShouldBeSystemMode() {
+		System.Assert.areEqual(
+			Dex.DEFAULT_ACCESS_LEVEL,
+			System.AccessLevel.SYSTEM_MODE
+		);
+	}
 
-    @IsTest
-    static void getSharingDatabaseShouldReturnInheritedDatabase() {
-        Dex.ISharingRepo sharingDatabase =
-                Dex.getSharingDatabase(Dex.SHARING_RULE.INHERITED_SHARING);
+	@IsTest
+	static void getSharingDatabaseShouldReturnInheritedDatabase() {
+		Dex.ISharingRepo sharingDatabase = Dex.getSharingDatabase(
+			Dex.SHARING_RULE.INHERITED_SHARING
+		);
 
-        System.Assert.isInstanceOfType(sharingDatabase, Dex.InheritedSharingRepo.class);
-    }
+		System.Assert.isInstanceOfType(
+			sharingDatabase,
+			Dex.InheritedSharingRepo.class
+		);
+	}
 
-    @IsTest
-    static void getSharingDatabaseShouldReturnWithSharingDatabase() {
-        Dex.ISharingRepo sharingDatabase =
-                Dex.getSharingDatabase(Dex.SHARING_RULE.WITH_SHARING);
+	@IsTest
+	static void getSharingDatabaseShouldReturnWithSharingDatabase() {
+		Dex.ISharingRepo sharingDatabase = Dex.getSharingDatabase(
+			Dex.SHARING_RULE.WITH_SHARING
+		);
 
-        System.Assert.isInstanceOfType(sharingDatabase, Dex.WithSharingRepo.class);
-    }
+		System.Assert.isInstanceOfType(sharingDatabase, Dex.WithSharingRepo.class);
+	}
 
-    @IsTest
-    static void getSharingDatabaseShouldReturnWithoutSharingDatabase() {
-        Dex.ISharingRepo sharingDatabase =
-                Dex.getSharingDatabase(Dex.SHARING_RULE.WITHOUT_SHARING);
+	@IsTest
+	static void getSharingDatabaseShouldReturnWithoutSharingDatabase() {
+		Dex.ISharingRepo sharingDatabase = Dex.getSharingDatabase(
+			Dex.SHARING_RULE.WITHOUT_SHARING
+		);
 
-        System.Assert.isInstanceOfType(sharingDatabase, Dex.WithoutSharingRepo.class);
-    }
+		System.Assert.isInstanceOfType(
+			sharingDatabase,
+			Dex.WithoutSharingRepo.class
+		);
+	}
 
-    @IsTest
-    static void sharingDatabasesShouldCallSystemDatabaseForQueries() {
-        String query = 'Select Id FROM Task wHERE Subject = :testSubject';
-        Map<String, Object> bindVariables = new Map<String, Object>{
-                'testSubject' => 'Test Task'
-        };
+	@IsTest
+	static void sharingDatabasesShouldCallSystemDatabaseForQueries() {
+		String query = 'Select Id FROM Task wHERE Subject = :testSubject';
+		Map<String, Object> bindVariables = new Map<String, Object>{
+			'testSubject' => 'Test Task'
+		};
 
-        Test.startTest();
+		Test.startTest();
 
-        for (Dex.SHARING_RULE sharingRule : Dex.SHARING_RULE.values()) {
-            Dex.ISharingRepo sharingRepo =
-                    Dex.getSharingDatabase(sharingRule);
+		for (Dex.SHARING_RULE sharingRule : Dex.SHARING_RULE.values()) {
+			Dex.ISharingRepo sharingRepo = Dex.getSharingDatabase(sharingRule);
 
-            Object[] results = sharingRepo.getAll(
-                    query,
-                    bindVariables,
-                    System.AccessLevel.SYSTEM_MODE
-            );
+			Object[] results = sharingRepo.getAll(
+				query,
+				bindVariables,
+				System.AccessLevel.SYSTEM_MODE
+			);
 
-            System.Assert.isInstanceOfType(
-                    results,
-                    List<SObject>.class
-            );
-        }
+			System.Assert.isInstanceOfType(results, List<SObject>.class);
+		}
 
-        Test.stopTest();
-    }
+		Test.stopTest();
+	}
 
-    @IsTest
-    static void getWithRecordShouldReturnOneSObject() {
-        getTestRecord();
+	@IsTest
+	static void getWithRecordShouldReturnOneSObject() {
+		getTestRecord();
 
-        String query = 'SELECT Id FROM Task';
+		String query = 'SELECT Id FROM Task';
 
-        Test.startTest();
+		Test.startTest();
 
-        Object result = Dex.get(query);
+		Object result = Dex.get(query);
 
-        Test.stopTest();
+		Test.stopTest();
 
-        System.Assert.isInstanceOfType(
-                result,
-                SObject.class
-        );
+		System.Assert.isInstanceOfType(result, SObject.class);
 
-        System.Assert.isNotNull(result);
-    }
+		System.Assert.isNotNull(result);
+	}
 
-    @IsTest
-    static void getWithoutRecordShouldReturnNull() {
-        String query = 'SELECT Id FROM Task';
+	@IsTest
+	static void getWithoutRecordShouldReturnNull() {
+		String query = 'SELECT Id FROM Task';
 
-        Test.startTest();
+		Test.startTest();
 
-        Object result = Dex.get(query);
+		Object result = Dex.get(query);
 
-        Test.stopTest();
+		Test.stopTest();
 
-        System.Assert.isNull(result);
-    }
+		System.Assert.isNull(result);
+	}
 
-    @IsTest
-    static void queryShouldReturnSObjectList() {
+	@IsTest
+	static void queryShouldReturnSObjectList() {
+		SObject[] testRecords = getTestRecords(10);
 
-        SObject[] testRecords = getTestRecords(10);
+		String query = 'SELECT Id FROM Task';
 
-        String query = 'SELECT Id FROM Task';
+		Test.startTest();
 
-        Test.startTest();
+		Object[] results = Dex.getAll(query);
 
-        Object[] results = Dex.getAll(query);
+		Test.stopTest();
 
-        Test.stopTest();
+		System.Assert.isInstanceOfType(results, List<SObject>.class);
 
-        System.Assert.isInstanceOfType(
-                results,
-                List<SObject>.class
-        );
+		System.Assert.areEqual(testRecords.size(), results.size());
+	}
 
-        System.Assert.areEqual(testRecords.size(), results.size());
-    }
+	@IsTest
+	static void getIncludingAggregateResultsShouldReturnAggregateWrapper() {
+		String query = 'SELECT COUNT(Id), COUNT(Id) TaskCount FROM Task';
 
-    @IsTest
-    static void getIncludingAggregateResultsShouldReturnAggregateWrapper() {
-        String query = 'SELECT COUNT(Id), COUNT(Id) TaskCount FROM Task';
+		Test.startTest();
 
-        Test.startTest();
+		Object result = Dex.get(query);
 
-        Object result = Dex.get(query);
+		Test.stopTest();
 
-        Test.stopTest();
+		System.Assert.isInstanceOfType(result, Dex.AggregateResult.class);
 
-        System.Assert.isInstanceOfType(
-                result,
-                Dex.AggregateResult.class
-        );
+		Dex.AggregateResult aggregateResult = (Dex.AggregateResult) result;
+		System.Assert.areEqual(0, aggregateResult.get('expr0'));
+		System.Assert.areEqual(0, aggregateResult.get('TaskCount'));
+	}
 
-        Dex.AggregateResult aggregateResult = (Dex.AggregateResult) result;
-        System.Assert.areEqual(0, aggregateResult.get('expr0'));
-        System.Assert.areEqual(0, aggregateResult.get('TaskCount'));
-    }
+	@IsTest
+	static void getAllIncludingAggregateResultsShouldReturnAggregateWrappers() {
+		String query = 'SELECT COUNT(Id), COUNT(Id) TaskCount FROM Task';
 
+		Test.startTest();
 
-    @IsTest
-    static void getAllIncludingAggregateResultsShouldReturnAggregateWrappers() {
-        String query = 'SELECT COUNT(Id), COUNT(Id) TaskCount FROM Task';
+		Object[] results = Dex.getAll(query);
 
-        Test.startTest();
+		Test.stopTest();
 
-        Object[] results = Dex.getAll(query);
+		System.Assert.isInstanceOfType(results, List<Dex.AggregateResult>.class);
 
-        Test.stopTest();
+		Dex.AggregateResult[] aggregateResults = (Dex.AggregateResult[]) results;
+		System.Assert.areEqual(1, aggregateResults.size());
+		System.Assert.areEqual(0, aggregateResults.get(0).get('expr0'));
+		System.Assert.areEqual(0, aggregateResults.get(0).get('TaskCount'));
+	}
 
-        System.Assert.isInstanceOfType(
-                results,
-                List<Dex.AggregateResult>.class
-        );
+	private static SObject getTestRecord() {
+		return getTestRecords(1).get(0);
+	}
 
-        Dex.AggregateResult[] aggregateResults = (Dex.AggregateResult[]) results;
-        System.Assert.areEqual(1, aggregateResults.size());
-        System.Assert.areEqual(0, aggregateResults.get(0).get('expr0'));
-        System.Assert.areEqual(0, aggregateResults.get(0).get('TaskCount'));
-    }
+	private static SObject[] getTestRecords(Integer size) {
+		ATK.SaveResult result = ATK.prepare(Task.SObjectType, size)
+			.field(Task.Subject)
+			.index('Task-{0000}')
+			.save();
 
+		return result.get(Task.SObjectType);
+	}
 
-    private static SObject getTestRecord() {
-        return getTestRecords(1).get(0);
-    }
+	@IsTest
+	static void getQueryLocatorShouldReturnSsytemDatabaseQueryLocator() {
+		String query = 'SELECT Id FROM Task';
 
-    private static SObject[] getTestRecords(Integer size) {
-        ATK.SaveResult result =
-                ATK.prepare(Task.SObjectType, size)
-                        .field(Task.Subject)
-                        .index('Task-{0000}')
-                        .save();
+		Test.startTest();
 
-        return result.get(Task.SObjectType);
-    }
+		Object queryLocator = Dex.getQueryLocator(query);
 
-    @IsTest
-    static void getQueryLocatorShouldReturnSsytemDatabaseQueryLocator() {
-        String query = 'SELECT Id FROM Task';
+		System.Assert.isInstanceOfType(queryLocator, Database.QueryLocator.class);
 
-        Test.startTest();
+		Test.stopTest();
+	}
 
-        Object queryLocator = Dex.getQueryLocator(query);
+	@IsTest
+	static void sharingDatabaseGetQueryLocatorShouldReturnSystemDatabaseQueryLocator() {
+		String query = 'SELECT Id FROM Task';
 
-        System.Assert.isInstanceOfType(queryLocator, Database.QueryLocator.class);
+		Test.startTest();
 
-        Test.stopTest();
-    }
+		for (Dex.SHARING_RULE sharingRule : Dex.SHARING_RULE.values()) {
+			Object queryLocator = Dex.getQueryLocator(query, sharingRule);
 
-    @IsTest
-    static void sharingDatabaseGetQueryLocatorShouldReturnSystemDatabaseQueryLocator() {
-        String query = 'SELECT Id FROM Task';
+			System.Assert.isInstanceOfType(queryLocator, Database.QueryLocator.class);
+		}
 
-        Test.startTest();
+		Test.stopTest();
+	}
 
-        for (Dex.SHARING_RULE sharingRule : Dex.SHARING_RULE.values()) {
+	@IsTest
+	static void accessLevelGetQueryLocatorShouldReturnSystemDatabaseQueryLocator() {
+		String query = 'SELECT Id FROM Task';
 
-            Object queryLocator = Dex.getQueryLocator(query, sharingRule);
+		Test.startTest();
 
-            System.Assert.isInstanceOfType(queryLocator, Database.QueryLocator.class);
-        }
+		for (System.AccessLevel accessLevel : accessLevels()) {
+			Object queryLocator = Dex.getQueryLocator(query, accessLevel);
 
-        Test.stopTest();
+			System.Assert.isInstanceOfType(queryLocator, Database.QueryLocator.class);
+		}
 
-    }
+		Test.stopTest();
+	}
 
-    @IsTest
-    static void accessLevelGetQueryLocatorShouldReturnSystemDatabaseQueryLocator() {
-        String query = 'SELECT Id FROM Task';
+	private static List<System.AccessLevel> accessLevels() {
+		return new List<System.AccessLevel>{
+			System.AccessLevel.SYSTEM_MODE,
+			System.AccessLevel.USER_MODE
+		};
+	}
 
-        Test.startTest();
+	@IsTest
+	static void aggregateResultCanBeMocked() {
+		Dex.AggregateResult result = new Dex.AggregateResult();
 
-        for (System.AccessLevel accessLevel : accessLevels()) {
+		result.put('expr0', 0).put('TestCount', 25);
 
-            Object queryLocator = Dex.getQueryLocator(query, accessLevel);
-
-            System.Assert.isInstanceOfType(queryLocator, Database.QueryLocator.class);
-        }
-
-        Test.stopTest();
-
-    }
-
-    private static List<System.AccessLevel> accessLevels() {
-        return new List<System.AccessLevel>{
-                System.AccessLevel.SYSTEM_MODE,
-                System.AccessLevel.USER_MODE
-        };
-    }
-
-    @IsTest
-    static void aggregateResultCanBeMocked() {
-        Dex.AggregateResult result = new Dex.AggregateResult();
-
-        result
-                .put('expr0', 0)
-                .put('TestCount', 25);
-
-        System.Assert.areEqual(0, result.get('expr0'));
-        System.Assert.areEqual(25, result.get('TestCount'));
-    }
+		System.Assert.areEqual(0, result.get('expr0'));
+		System.Assert.areEqual(25, result.get('TestCount'));
+	}
 }
