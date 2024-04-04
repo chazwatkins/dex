@@ -23,6 +23,7 @@ public abstract class Dex {
 	// Database.EmptyRecycleBinResult - emptyRecyclingBin
 	// Database.rollback - Database.SavePoint
 
+
 	public enum SHARING_RULE {
 		INHERITED_SHARING,
 		WITH_SHARING,
@@ -38,10 +39,6 @@ public abstract class Dex {
 	private static final Map<SHARING_RULE, IRepository> SHARING_RULE_REPOS = new Map<SHARING_RULE, IRepository>();
 
 	private static IRepository mockInstance;
-
-	private static IRepository getRepo() {
-		return getRepo(DEFAULT_SHARING_RULE);
-	}
 
 	private static IRepository getRepo(SHARING_RULE sharingRule) {
 		if (mockInstance != null) {
@@ -64,248 +61,152 @@ public abstract class Dex {
 	}
 
 	public static SObject one(String query) {
-		return getRepo().one(query, new Map<String, Object>());
+		Dex.QueryOptions options = new Dex.QueryOptions();
+		return getRepo(options.sharingRule).one(query, options);
 	}
 
-	public static SObject one(String query, Map<String, Object> binds) {
-		return getRepo().one(query, binds, DEFAULT_ACCESS_LEVEL);
-	}
-
-	public static SObject one(String query, System.AccessLevel accessLevel) {
-		return getRepo().one(query, accessLevel);
-	}
-
-	public static SObject one(
-		String query,
-		Map<String, Object> binds,
-		System.AccessLevel accessLevel
-	) {
-		return getRepo().one(query, binds, accessLevel);
+	public static SObject one(String query, Dex.QueryOptions options) {
+		return getRepo(options.sharingRule).one(query, options);
 	}
 
 	public static Integer count(String query) {
-		return getRepo().count(query, new Map<String, Object>());
+		Dex.QueryOptions options = new Dex.QueryOptions();
+		return getRepo(options.sharingRule).count(query, options);
 	}
 
-	public static Integer count(String query, Map<String, Object> binds) {
-		return getRepo().count(query, binds, DEFAULT_ACCESS_LEVEL);
-	}
-
-	public static Integer count(String query, System.AccessLevel accessLevel) {
-		return getRepo().count(query, accessLevel);
-	}
-
-	public static Integer count(
-		String query,
-		Map<String, Object> binds,
-		System.AccessLevel accessLevel
-	) {
-		return getRepo().count(query, binds, accessLevel);
+	public static Integer count(String query, Dex.QueryOptions options) {
+		return getRepo(options.sharingRule).count(query, options);
 	}
 
 	public static SObject[] all(String query) {
-		return getRepo().all(query);
+		Dex.QueryOptions options = new Dex.QueryOptions();
+		return getRepo(options.sharingRule).all(query, options);
 	}
 
-	public static SObject[] all(String query, Map<String, Object> binds) {
-		return getRepo().all(query, binds);
-	}
-
-	public static SObject[] all(String query, System.AccessLevel accessLevel) {
-		return getRepo().all(query, accessLevel);
-	}
-
-	public static SObject[] all(String query, SHARING_RULE sharingRule) {
-		return getRepo(sharingRule).all(query);
-	}
-
-	public static SObject[] all(
-		String query,
-		Map<String, Object> binds,
-		System.AccessLevel accessLevel
-	) {
-		return getRepo().all(query, binds, accessLevel);
+	public static SObject[] all(String query, Dex.QueryOptions options) {
+		return getRepo(options.sharingRule).all(query, options);
 	}
 
 	public static Dex.AggregateResult[] aggregate(String query) {
-		return getRepo().aggregate(query);
+		Dex.QueryOptions options = new Dex.QueryOptions();
+		return getRepo(options.sharingRule).aggregate(query, options);
 	}
 
-	public static Dex.AggregateResult[] aggregate(String query, Map<String, Object> binds) {
-		return getRepo().aggregate(query, binds);
-	}
-
-	public static Dex.AggregateResult[] aggregate(String query, System.AccessLevel accessLevel) {
-		return getRepo().aggregate(query, accessLevel);
-	}
-
-	public static Dex.AggregateResult[] aggregate(String query, SHARING_RULE sharingRule) {
-		return getRepo(sharingRule).aggregate(query);
-	}
-
-	public static Dex.AggregateResult[] aggregate(
-		String query,
-		Map<String, Object> binds,
-		System.AccessLevel accessLevel
-	) {
-		return getRepo().aggregate(query, binds, accessLevel);
+	public static Dex.AggregateResult[] aggregate(String query, Dex.QueryOptions options) {
+		return getRepo(options.sharingRule).aggregate(query, options);
 	}
 
 	public static void insertAll(SObject[] records) {
-		getRepo().insertAll(records);
+		Dex.DmlOptions options = new Dex.DmlOptions();
+		getRepo(options.sharingRule).insertAll(records, options);
+	}
+
+	public static void insertAll(SObject[] records, Dex.DmlOptions options) {
+		getRepo(options.sharingRule).insertAll(records, options);
 	}
 
 	public static void updateAll(SObject[] records) {
-		getRepo().updateAll(records);
+		Dex.DmlOptions options = new Dex.DmlOptions();
+		getRepo(options.sharingRule).updateAll(records, options);
+	}
+
+	public static void updateAll(SObject[] records, Dex.DmlOptions options) {
+		getRepo(options.sharingRule).updateAll(records, options);
 	}
 
 	public static void upsertAll(SObject[] records) {
-		getRepo().upsertAll(records);
+		Dex.DmlOptions options = new Dex.DmlOptions();
+		getRepo(options.sharingRule).upsertAll(records, options);
+	}
+
+	public static void upsertAll(SObject[] records, Dex.DmlOptions options) {
+		getRepo(options.sharingRule).upsertAll(records, options);
 	}
 
 	public static void softDeleteAll(SObject[] records) {
-		getRepo().softDeleteAll(records);
+		Dex.DmlOptions options = new Dex.DmlOptions();
+		getRepo(options.sharingRule).softDeleteAll(records, options);
+	}
+
+	public static void softDeleteAll(SObject[] records, Dex.DmlOptions options) {
+		getRepo(options.sharingRule).softDeleteAll(records, options);
 	}
 
 	public static void hardDeleteAll(SObject[] records) {
-		getRepo().hardDeleteAll(records);
+		Dex.DmlOptions options = new Dex.DmlOptions();
+		getRepo(options.sharingRule).hardDeleteAll(records, options);
+	}
+
+	public static void hardDeleteAll(SObject[] records, Dex.DmlOptions options) {
+		getRepo(options.sharingRule).hardDeleteAll(records, options);
 	}
 
 	public static void undeleteAll(SObject[] records) {
-		getRepo().undeleteAll(records);
+		Dex.DmlOptions options = new Dex.DmlOptions();
+		getRepo(options.sharingRule).undeleteAll(records, options);
+	}
+
+	public static void undeleteAll(SObject[] records, Dex.DmlOptions options) {
+		getRepo(options.sharingRule).hardDeleteAll(records, options);
 	}
 
 	public static void run(Dex.Multi multi) {
-		getRepo().execute(multi);
+		Dex.DmlOptions options = new Dex.DmlOptions();
+		getRepo(options.sharingRule).execute(multi);
 	}
 
 	public static void executeTransaction(Dex.Multi multi) {
-		getRepo().executeTransaction(multi);
+		Dex.DmlOptions options = new Dex.DmlOptions();
+		getRepo(options.sharingRule).executeTransaction(multi);
 	}
 
 	public virtual class Repository implements IRepository {
-		public SObject one(String query) {
-			return getOneResults(Database.query(maybeLimitByOne(query), DEFAULT_ACCESS_LEVEL));
-		}
-
-		public SObject one(String query, Map<String, Object> binds) {
-			return getOneResults(Database.queryWithBinds(maybeLimitByOne(query), binds, DEFAULT_ACCESS_LEVEL));
-		}
-
-		public SObject one(String query, System.AccessLevel accessLevel) {
-			return getOneResults(Database.query(maybeLimitByOne(query), accessLevel));
-		}
-
 		public SObject one(
 			String query,
-			Map<String, Object> binds,
-			System.AccessLevel accessLevel
+			Dex.QueryOptions options
 		) {
 			return getOneResults(Database.queryWithBinds(
 				maybeLimitByOne(query),
-				binds,
-				accessLevel
+				options.binds,
+				options.accessLevel
 			));
 		}
 
-		private SObject getOneResults(SObject[] records) {
-			return records.isEmpty() ? null : (SObject) records.get(0);
+		public Integer count(String query, Dex.QueryOptions options) {
+			return Database.countQueryWithBinds(query, options.binds, options.accessLevel);
 		}
 
-		private String maybeLimitByOne(String query) {
-			String limitedQuery = query;
-			if (!query.contains('LIMIT 1')) {
-				limitedQuery = query + ' LIMIT 1';
-			}
-
-			return limitedQuery;
+		public SObject[] all(String query, Dex.QueryOptions options) {
+			return Database.queryWithBinds(query, options.binds, options.accessLevel);
 		}
 
-		public Integer count(String query) {
-			return Database.countQuery(query, DEFAULT_ACCESS_LEVEL);
-		}
-
-		public Integer count(String query, Map<String, Object> binds) {
-			return Database.countQueryWithBinds(query, binds, DEFAULT_ACCESS_LEVEL);
-		}
-
-		public Integer count(String query, System.AccessLevel accessLevel) {
-			return Database.countQuery(query, accessLevel);
-		}
-
-		public Integer count(
-			String query,
-			Map<String, Object> binds,
-			System.AccessLevel accessLevel
-		) {
-			return Database.countQueryWithBinds(query, binds, accessLevel);
-		}
-
-		public SObject[] all(String query) {
-			return Database.query(query, Dex.DEFAULT_ACCESS_LEVEL);
-		}
-
-		public SObject[] all(String query, Map<String, Object> binds) {
-			return Database.queryWithBinds(query, binds, Dex.DEFAULT_ACCESS_LEVEL);
-		}
-
-		public SObject[] all(String query, System.AccessLevel accessLevel) {
-			return Database.query(query, accessLevel);
-		}
-
-		public SObject[] all(
-			String query,
-			Map<String, Object> binds,
-			System.AccessLevel accessLevel
-		) {
-			return Database.queryWithBinds(query, binds, accessLevel);
-		}
-
-		public Dex.AggregateResult[] aggregate(String query) {
-			return Dex.aggregateResults((Schema.AggregateResult[]) Database.query(query, Dex.DEFAULT_ACCESS_LEVEL));
-		}
-
-		public Dex.AggregateResult[] aggregate(String query, Map<String, Object> binds) {
+		public Dex.AggregateResult[] aggregate(String query, Dex.QueryOptions options) {
 			return Dex.aggregateResults(
-				(Schema.AggregateResult[]) Database.queryWithBinds(query, binds, Dex.DEFAULT_ACCESS_LEVEL)
+				(Schema.AggregateResult[]) Database.queryWithBinds(query, options.binds, options.accessLevel)
 			);
 		}
 
-		public Dex.AggregateResult[] aggregate(String query, System.AccessLevel accessLevel) {
-			return Dex.aggregateResults((Schema.AggregateResult[]) Database.query(query, accessLevel));
-		}
-
-		public Dex.AggregateResult[] aggregate(
-			String query,
-			Map<String, Object> binds,
-			System.AccessLevel accessLevel
-		) {
-			return Dex.aggregateResults(
-				(Schema.AggregateResult[]) Database.queryWithBinds(query, binds, accessLevel)
-			);
-		}
-
-		public void insertAll(SObject[] records) {
+		public void insertAll(SObject[] records, Dex.DmlOptions options) {
 			executeDmlOperation(Dex.DmlOperation.OP_INSERT, records);
 		}
 
-		public void updateAll(SObject[] records) {
+		public void updateAll(SObject[] records, Dex.DmlOptions options) {
 			executeDmlOperation(Dex.DmlOperation.OP_UPDATE, records);
 		}
 
-		public void upsertAll(SObject[] records) {
+		public void upsertAll(SObject[] records, Dex.DmlOptions options) {
 			executeDmlOperation(Dex.DmlOperation.OP_UPSERT, records);
 		}
 
-		public void softDeleteAll(SObject[] records) {
+		public void softDeleteAll(SObject[] records, Dex.DmlOptions options) {
 			executeDmlOperation(Dex.DmlOperation.OP_SOFT_DELETE, records);
 		}
 
-		public void hardDeleteAll(SObject[] records) {
+		public void hardDeleteAll(SObject[] records, Dex.DmlOptions options) {
 			executeDmlOperation(Dex.DmlOperation.OP_HARD_DELETE, records);
 		}
 
-		public void undeleteAll(SObject[] records) {
+		public void undeleteAll(SObject[] records, Dex.DmlOptions options) {
 			executeDmlOperation(Dex.DmlOperation.OP_UNDELETE, records);
 		}
 
@@ -384,6 +285,19 @@ public abstract class Dex {
 
 			return chunks;
 		}
+
+		private SObject getOneResults(SObject[] records) {
+			return records.isEmpty() ? null : (SObject) records.get(0);
+		}
+
+		private String maybeLimitByOne(String query) {
+			String limitedQuery = query;
+			if (!query.contains('LIMIT 1')) {
+				limitedQuery = query + ' LIMIT 1';
+			}
+
+			return limitedQuery;
+		}
 	}
 
 	@TestVisible
@@ -415,64 +329,36 @@ public abstract class Dex {
 		}
 
 		@TestVisible
-		private AggregateResult put(String alias, Object value) {
+		private Dex.AggregateResult put(String alias, Object value) {
 			this.data.put(alias, value);
 			return this;
 		}
 	}
 
-	private static AggregateResult[] aggregateResults(Schema.AggregateResult[] systemResults) {
-		AggregateResult[] aggregateResults = new AggregateResult[]{
+	private static Dex.AggregateResult[] aggregateResults(Schema.AggregateResult[] systemResults) {
+		Dex.AggregateResult[] aggregateResults = new Dex.AggregateResult[]{
 		};
 
 		for (
 			Schema.AggregateResult systemResult : (Schema.AggregateResult[]) systemResults
 		) {
-			aggregateResults.add(new AggregateResult(systemResult));
+			aggregateResults.add(new Dex.AggregateResult(systemResult));
 		}
 
 		return aggregateResults;
 	}
 
 	public interface IRepository {
-		SObject one(String query);
-		SObject one(String query, Map<String, Object> binds);
-		SObject one(
-			String query,
-			Map<String, Object> binds,
-			System.AccessLevel accessLevel
-		);
-		SObject one(String query, System.AccessLevel accessLevel);
-		Integer count(String query);
-		Integer count(String query, Map<String, Object> binds);
-		Integer count(
-			String query,
-			Map<String, Object> binds,
-			System.AccessLevel accessLevel
-		);
-		Integer count(String query, System.AccessLevel accessLevel);
-		SObject[] all(String query);
-		SObject[] all(String query, Map<String, Object> binds);
-		SObject[] all(
-			String query,
-			Map<String, Object> binds,
-			System.AccessLevel accessLevel
-		);
-		SObject[] all(String query, System.AccessLevel accessLevel);
-		Dex.AggregateResult[] aggregate(String query);
-		Dex.AggregateResult[] aggregate(String query, Map<String, Object> binds);
-		Dex.AggregateResult[] aggregate(
-			String query,
-			Map<String, Object> binds,
-			System.AccessLevel accessLevel
-		);
-		Dex.AggregateResult[] aggregate(String query, System.AccessLevel accessLevel);
-		void insertAll(SObject[] records);
-		void updateAll(SObject[] records);
-		void upsertAll(SObject[] records);
-		void softDeleteAll(SObject[] records);
-		void hardDeleteAll(SObject[] records);
-		void undeleteAll(SObject[] records);
+		SObject one(String query, Dex.QueryOptions options);
+		Integer count(String query, Dex.QueryOptions options);
+		SObject[] all(String query, Dex.QueryOptions options);
+		Dex.AggregateResult[] aggregate(String query, Dex.QueryOptions options);
+		void insertAll(SObject[] records, Dex.DmlOptions options);
+		void updateAll(SObject[] records, Dex.DmlOptions options);
+		void upsertAll(SObject[] records, Dex.DmlOptions options);
+		void softDeleteAll(SObject[] records, Dex.DmlOptions options);
+		void hardDeleteAll(SObject[] records, Dex.DmlOptions options);
+		void undeleteAll(SObject[] records, Dex.DmlOptions options);
 		void execute(Dex.Multi multi);
 		void executeTransaction(Dex.Multi multi);
 	}
@@ -540,6 +426,105 @@ public abstract class Dex {
 			}
 
 			operations.get(operation).addAll(records);
+		}
+	}
+
+	public class QueryOptions {
+		public Map<String, Object> binds;
+		public Dex.SHARING_RULE sharingRule;
+		public System.AccessLevel accessLevel;
+
+		public QueryOptions() {
+			this.binds = new Map<String, Object>();
+			this.sharingRule = DEFAULT_SHARING_RULE;
+			this.accessLevel = DEFAULT_ACCESS_LEVEL;
+		}
+
+		public QueryOptions withSharing() {
+			this.sharingRule = Dex.SHARING_RULE.WITH_SHARING;
+			return this;
+		}
+
+		public QueryOptions withoutSharing() {
+			this.sharingRule = Dex.SHARING_RULE.WITHOUT_SHARING;
+			return this;
+		}
+
+		public QueryOptions inheritedSharing() {
+			this.sharingRule = Dex.SHARING_RULE.INHERITED_SHARING;
+			return this;
+		}
+
+		public QueryOptions asUser() {
+			this.accessLevel = System.AccessLevel.USER_MODE;
+			return this;
+		}
+
+		public QueryOptions asSystem() {
+			this.accessLevel = System.AccessLevel.SYSTEM_MODE;
+			return this;
+		}
+
+		public QueryOptions withBinds(Map<String, Object> binds) {
+			this.binds = binds;
+			return this;
+		}
+
+		public QueryOptions addBind(String key, Object value) {
+			this.binds.put(key, value);
+			return this;
+		}
+	}
+
+	public class DmlOptions {
+		public Dex.SHARING_RULE sharingRule;
+		public System.AccessLevel accessLevel;
+		public Database.DMLOptions options;
+
+		public DmlOptions() {
+			this.sharingRule = DEFAULT_SHARING_RULE;
+			this.accessLevel = DEFAULT_ACCESS_LEVEL;
+			this.options = new Database.DMLOptions();
+		}
+
+		public DmlOptions(
+			Dex.SHARING_RULE sharingRule,
+			System.AccessLevel accessLevel,
+			Database.DMLOptions options
+		) {
+			this.sharingRule = sharingRule;
+			this.accessLevel = accessLevel;
+			this.options = options;
+		}
+
+		public Dex.DmlOptions withSharing() {
+			this.sharingRule = Dex.SHARING_RULE.WITH_SHARING;
+			return this;
+		}
+
+		public Dex.DmlOptions withoutSharing() {
+			this.sharingRule = Dex.SHARING_RULE.WITHOUT_SHARING;
+			return this;
+		}
+
+		public Dex.DmlOptions inheritedSharing() {
+			this.sharingRule = Dex.SHARING_RULE.INHERITED_SHARING;
+			return this;
+		}
+
+		public Dex.DmlOptions asUser() {
+			this.accessLevel = System.AccessLevel.USER_MODE;
+			return this;
+		}
+
+		public Dex.DmlOptions asSystem() {
+			this.accessLevel = System.AccessLevel.SYSTEM_MODE;
+			return this;
+		}
+
+		public Dex.DmlOptions withOptions(Database.DMLOptions options) {
+			this.options = options;
+			return this;
 		}
 	}
 }
