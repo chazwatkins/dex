@@ -150,14 +150,22 @@ public abstract class Dex {
 		getRepo(options.sharingRule).hardDeleteAll(records, options);
 	}
 
-	public static void run(Dex.Multi multi) {
+	public static void execute(Dex.Multi multi) {
 		Dex.DmlOptions options = new Dex.DmlOptions();
-		getRepo(options.sharingRule).execute(multi);
+		getRepo(options.sharingRule).execute(multi, options);
 	}
 
-	public static void executeTransaction(Dex.Multi multi) {
+	public static void execute(Dex.Multi multi, Dex.DmlOptions options) {
+		getRepo(options.sharingRule).execute(multi, options);
+	}
+
+	public static void executeAsTransaction(Dex.Multi multi) {
 		Dex.DmlOptions options = new Dex.DmlOptions();
-		getRepo(options.sharingRule).executeTransaction(multi);
+		getRepo(options.sharingRule).executeAsTransaction(multi, options);
+	}
+
+	public static void executeAsTransaction(Dex.Multi multi, Dex.DmlOptions options) {
+		getRepo(options.sharingRule).executeAsTransaction(multi, options);
 	}
 
 	public virtual class Repository implements IRepository {
@@ -187,37 +195,37 @@ public abstract class Dex {
 		}
 
 		public void insertAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_INSERT, records);
+			executeDmlOperation(Dex.DmlOperation.OP_INSERT, records, options);
 		}
 
 		public void updateAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_UPDATE, records);
+			executeDmlOperation(Dex.DmlOperation.OP_UPDATE, records, options);
 		}
 
 		public void upsertAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_UPSERT, records);
+			executeDmlOperation(Dex.DmlOperation.OP_UPSERT, records, options);
 		}
 
 		public void softDeleteAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_SOFT_DELETE, records);
+			executeDmlOperation(Dex.DmlOperation.OP_SOFT_DELETE, records, options);
 		}
 
 		public void hardDeleteAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_HARD_DELETE, records);
+			executeDmlOperation(Dex.DmlOperation.OP_HARD_DELETE, records, options);
 		}
 
 		public void undeleteAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_UNDELETE, records);
+			executeDmlOperation(Dex.DmlOperation.OP_UNDELETE, records, options);
 		}
 
-		public void execute(Dex.Multi multi) {
-			this.executeDmlOperations(multi);
+		public void execute(Dex.Multi multi, Dex.DmlOptions options) {
+			this.executeDmlOperations(multi, options);
 		}
 
-		public void executeTransaction(Dex.Multi multi) {
+		public void executeAsTransaction(Dex.Multi multi, Dex.DmlOptions options) {
 			System.Savepoint savepoint = Database.setSavepoint();
 			try {
-				this.executeDmlOperations(multi);
+				this.executeDmlOperations(multi, options);
 				Database.releaseSavepoint(savepoint);
 			} catch (Exception e) {
 				Database.rollback(savepoint);
@@ -225,7 +233,7 @@ public abstract class Dex {
 			}
 		}
 
-		private void executeDmlOperations(Dex.Multi multi) {
+		private void executeDmlOperations(Dex.Multi multi, Dex.DmlOptions options) {
 			Dex.DmlOperation[] operations = Dex.DmlOperation.values();
 			for (Dex.DmlOperation operation : operations) {
 				SObject[] records = multi.operations.get(operation);
@@ -234,33 +242,33 @@ public abstract class Dex {
 					continue;
 				}
 
-				this.executeDmlOperation(operation, records);
+				this.executeDmlOperation(operation, records, options);
 			}
 		}
 
-		private void executeDmlOperation(Dex.DmlOperation operation, SObject[] records) {
+		private void executeDmlOperation(Dex.DmlOperation operation, SObject[] records, Dex.DmlOptions options) {
 			Dex.RecordChunk[] chunks = chunkRecords(records);
 
 			for (Dex.RecordChunk chunk : chunks) {
 				switch on operation {
 					when OP_INSERT {
-						Database.insert(chunk.records);
+						Database.insert(chunk.records, options.systemOptions, options.accessLevel);
 					}
 					when OP_UPDATE {
-						Database.update(chunk.records);
+						Database.update(chunk.records, options.systemOptions, options.accessLevel);
 					}
 					when OP_UPSERT {
-						Database.upsert(chunk.records);
+						Database.upsert(chunk.records, options.systemOptions.optAllOrNone, options.accessLevel);
 					}
 					when OP_SOFT_DELETE {
-						Database.delete(chunk.records);
+						Database.delete(chunk.records, options.systemOptions.optAllOrNone, options.accessLevel);
 					}
 					when OP_HARD_DELETE {
-						Database.delete(chunk.records);
+						Database.delete(chunk.records, options.systemOptions.optAllOrNone, options.accessLevel);
 						Database.emptyRecycleBin(chunk.records);
 					}
 					when OP_UNDELETE {
-						Database.undelete(chunk.records);
+						Database.undelete(chunk.records, options.systemOptions.optAllOrNone, options.accessLevel);
 					}
 				}
 			}
@@ -359,8 +367,8 @@ public abstract class Dex {
 		void softDeleteAll(SObject[] records, Dex.DmlOptions options);
 		void hardDeleteAll(SObject[] records, Dex.DmlOptions options);
 		void undeleteAll(SObject[] records, Dex.DmlOptions options);
-		void execute(Dex.Multi multi);
-		void executeTransaction(Dex.Multi multi);
+		void execute(Dex.Multi multi, Dex.DmlOptions options);
+		void executeAsTransaction(Dex.Multi multi, Dex.DmlOptions options);
 	}
 
 	public enum DmlOperation {
@@ -476,25 +484,26 @@ public abstract class Dex {
 		}
 	}
 
-	public class DmlOptions {
+	public class DMLOptions {
 		public Dex.SHARING_RULE sharingRule;
 		public System.AccessLevel accessLevel;
-		public Database.DMLOptions options;
+		public Database.DMLOptions systemOptions;
 
-		public DmlOptions() {
+		public DMLOptions() {
 			this.sharingRule = DEFAULT_SHARING_RULE;
 			this.accessLevel = DEFAULT_ACCESS_LEVEL;
-			this.options = new Database.DMLOptions();
+			this.systemOptions = new Database.DMLOptions();
+			this.systemOptions.optAllOrNone = false;
 		}
 
-		public DmlOptions(
+		public DMLOptions(
 			Dex.SHARING_RULE sharingRule,
 			System.AccessLevel accessLevel,
-			Database.DMLOptions options
+			Database.DMLOptions systemOptions
 		) {
 			this.sharingRule = sharingRule;
 			this.accessLevel = accessLevel;
-			this.options = options;
+			this.systemOptions = systemOptions;
 		}
 
 		public Dex.DmlOptions withSharing() {
@@ -522,8 +531,8 @@ public abstract class Dex {
 			return this;
 		}
 
-		public Dex.DmlOptions withOptions(Database.DMLOptions options) {
-			this.options = options;
+		public Dex.DmlOptions withSystemOptions(Database.DMLOptions systemOptions) {
+			this.systemOptions = systemOptions;
 			return this;
 		}
 	}
