@@ -11,6 +11,12 @@ public abstract class Dex {
 	// 4. Consolidate DML statements as much as possible to avoid running over limits
 	// 5. Add support for a query builder to avoid long string concatenation
 
+
+	// TODO: 4/4/2024 - Group DML statements by sharing rule defined in DMLOptions
+	// The sharingRepo is currently defined when calling the top level static methods on Dex.
+	// But, a multi could have different sharing rule settings per operation.  The executeDmlOperations
+	// may have to be moved to a top level private static method to achieve this.
+
 	// TODO: Combine dml statements where possible.
 	//  Salesforce can support up to 10 SObjectTypes in a single statement
 	// TODO: Add support for parent-child relationship inserts
@@ -97,75 +103,67 @@ public abstract class Dex {
 	}
 
 	public static void insertAll(SObject[] records) {
-		Dex.DmlOptions options = new Dex.DmlOptions();
+		Dex.DMLOptions options = new Dex.DMLOptions();
 		getRepo(options.sharingRule).insertAll(records, options);
 	}
 
-	public static void insertAll(SObject[] records, Dex.DmlOptions options) {
+	public static void insertAll(SObject[] records, Dex.DMLOptions options) {
 		getRepo(options.sharingRule).insertAll(records, options);
 	}
 
 	public static void updateAll(SObject[] records) {
-		Dex.DmlOptions options = new Dex.DmlOptions();
+		Dex.DMLOptions options = new Dex.DMLOptions();
 		getRepo(options.sharingRule).updateAll(records, options);
 	}
 
-	public static void updateAll(SObject[] records, Dex.DmlOptions options) {
+	public static void updateAll(SObject[] records, Dex.DMLOptions options) {
 		getRepo(options.sharingRule).updateAll(records, options);
 	}
 
 	public static void upsertAll(SObject[] records) {
-		Dex.DmlOptions options = new Dex.DmlOptions();
+		Dex.DMLOptions options = new Dex.DMLOptions();
 		getRepo(options.sharingRule).upsertAll(records, options);
 	}
 
-	public static void upsertAll(SObject[] records, Dex.DmlOptions options) {
+	public static void upsertAll(SObject[] records, Dex.DMLOptions options) {
 		getRepo(options.sharingRule).upsertAll(records, options);
 	}
 
 	public static void softDeleteAll(SObject[] records) {
-		Dex.DmlOptions options = new Dex.DmlOptions();
+		Dex.DMLOptions options = new Dex.DMLOptions();
 		getRepo(options.sharingRule).softDeleteAll(records, options);
 	}
 
-	public static void softDeleteAll(SObject[] records, Dex.DmlOptions options) {
+	public static void softDeleteAll(SObject[] records, Dex.DMLOptions options) {
 		getRepo(options.sharingRule).softDeleteAll(records, options);
 	}
 
 	public static void hardDeleteAll(SObject[] records) {
-		Dex.DmlOptions options = new Dex.DmlOptions();
+		Dex.DMLOptions options = new Dex.DMLOptions();
 		getRepo(options.sharingRule).hardDeleteAll(records, options);
 	}
 
-	public static void hardDeleteAll(SObject[] records, Dex.DmlOptions options) {
+	public static void hardDeleteAll(SObject[] records, Dex.DMLOptions options) {
 		getRepo(options.sharingRule).hardDeleteAll(records, options);
 	}
 
 	public static void undeleteAll(SObject[] records) {
-		Dex.DmlOptions options = new Dex.DmlOptions();
+		Dex.DMLOptions options = new Dex.DMLOptions();
 		getRepo(options.sharingRule).undeleteAll(records, options);
 	}
 
-	public static void undeleteAll(SObject[] records, Dex.DmlOptions options) {
+	public static void undeleteAll(SObject[] records, Dex.DMLOptions options) {
 		getRepo(options.sharingRule).hardDeleteAll(records, options);
 	}
 
 	public static void execute(Dex.Multi multi) {
-		Dex.DmlOptions options = new Dex.DmlOptions();
-		getRepo(options.sharingRule).execute(multi, options);
-	}
-
-	public static void execute(Dex.Multi multi, Dex.DmlOptions options) {
-		getRepo(options.sharingRule).execute(multi, options);
+		Dex.DMLOptions options = new Dex.DMLOptions();
+		getRepo(options.sharingRule).execute(multi);
 	}
 
 	public static void executeAsTransaction(Dex.Multi multi) {
-		Dex.DmlOptions options = new Dex.DmlOptions();
-		getRepo(options.sharingRule).executeAsTransaction(multi, options);
-	}
-
-	public static void executeAsTransaction(Dex.Multi multi, Dex.DmlOptions options) {
-		getRepo(options.sharingRule).executeAsTransaction(multi, options);
+		Dex.DMLOptions options = new Dex.DMLOptions();
+		getRepo(options.sharingRule).executeAsTransaction(multi);
 	}
 
 	public virtual class Repository implements IRepository {
@@ -194,38 +192,38 @@ public abstract class Dex {
 			);
 		}
 
-		public void insertAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_INSERT, records, options);
+		public void insertAll(SObject[] records, Dex.DMLOptions options) {
+			executeDmlOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_INSERT, options));
 		}
 
-		public void updateAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_UPDATE, records, options);
+		public void updateAll(SObject[] records, Dex.DMLOptions options) {
+			executeDmlOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UPDATE, options));
 		}
 
-		public void upsertAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_UPSERT, records, options);
+		public void upsertAll(SObject[] records, Dex.DMLOptions options) {
+			executeDmlOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UPSERT, options));
 		}
 
-		public void softDeleteAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_SOFT_DELETE, records, options);
+		public void softDeleteAll(SObject[] records, Dex.DMLOptions options) {
+			executeDmlOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_SOFT_DELETE, options));
 		}
 
-		public void hardDeleteAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_HARD_DELETE, records, options);
+		public void hardDeleteAll(SObject[] records, Dex.DMLOptions options) {
+			executeDmlOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_HARD_DELETE, options));
 		}
 
-		public void undeleteAll(SObject[] records, Dex.DmlOptions options) {
-			executeDmlOperation(Dex.DmlOperation.OP_UNDELETE, records, options);
+		public void undeleteAll(SObject[] records, Dex.DMLOptions options) {
+			executeDmlOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UNDELETE, options));
 		}
 
-		public void execute(Dex.Multi multi, Dex.DmlOptions options) {
-			this.executeDmlOperations(multi, options);
+		public void execute(Dex.Multi multi) {
+			this.executeDmlOperations(multi);
 		}
 
-		public void executeAsTransaction(Dex.Multi multi, Dex.DmlOptions options) {
+		public void executeAsTransaction(Dex.Multi multi) {
 			System.Savepoint savepoint = Database.setSavepoint();
 			try {
-				this.executeDmlOperations(multi, options);
+				this.executeDmlOperations(multi);
 				Database.releaseSavepoint(savepoint);
 			} catch (Exception e) {
 				Database.rollback(savepoint);
@@ -233,24 +231,37 @@ public abstract class Dex {
 			}
 		}
 
-		private void executeDmlOperations(Dex.Multi multi, Dex.DmlOptions options) {
-			Dex.DmlOperation[] operations = Dex.DmlOperation.values();
-			for (Dex.DmlOperation operation : operations) {
-				SObject[] records = multi.operations.get(operation);
+		private void executeDmlOperations(Dex.Multi multi) {
+			Dex.DmlOperationType[] operationTypes = Dex.DmlOperationType.values();
+			for (Dex.DmlOperationType operationType : operationTypes) {
+				Dex.DmlOperation[] operations = multi.operations.get(operationType);
 
-				if (records == null) {
-					continue;
+				Map<System.UUID, Dex.DmlOperation> operationByDmlOptionId = new Map<System.UUID, Dex.DmlOperation>();
+				for (Dex.DmlOperation operation : operations) {
+					System.UUID dmlOptionsUuid = operation.options.uuid;
+					if (!operationByDmlOptionId.containsKey(dmlOptionsUuid)) {
+						operationByDmlOptionId.put(
+							dmlOptionsUuid,
+							new Dex.DmlOperation(new SObject[]{
+							}, operation.type, operation.options)
+						);
+					}
+
+					operationByDmlOptionId.get(dmlOptionsUuid).records.addAll(operation.records);
 				}
 
-				this.executeDmlOperation(operation, records, options);
+				for (System.UUID dmlOptionUuid : operationByDmlOptionId.keySet()) {
+					Dex.DmlOperation operation = operationByDmlOptionId.get(dmlOptionUuid);
+					this.executeDmlOperation(operation);
+				}
 			}
 		}
 
-		private void executeDmlOperation(Dex.DmlOperation operation, SObject[] records, Dex.DmlOptions options) {
-			Dex.RecordChunk[] chunks = chunkRecords(records);
+		private void executeDmlOperation(Dex.DmlOperation operation) {
+			Dex.RecordChunk[] chunks = chunkRecords(operation.records);
 
 			for (Dex.RecordChunk chunk : chunks) {
-				switch on operation {
+				switch on operation.type {
 					when OP_INSERT {
 						Database.insert(chunk.records, options.systemOptions, options.accessLevel);
 					}
@@ -361,17 +372,17 @@ public abstract class Dex {
 		Integer count(String query, Dex.QueryOptions options);
 		SObject[] all(String query, Dex.QueryOptions options);
 		Dex.AggregateResult[] aggregate(String query, Dex.QueryOptions options);
-		void insertAll(SObject[] records, Dex.DmlOptions options);
-		void updateAll(SObject[] records, Dex.DmlOptions options);
-		void upsertAll(SObject[] records, Dex.DmlOptions options);
-		void softDeleteAll(SObject[] records, Dex.DmlOptions options);
-		void hardDeleteAll(SObject[] records, Dex.DmlOptions options);
-		void undeleteAll(SObject[] records, Dex.DmlOptions options);
-		void execute(Dex.Multi multi, Dex.DmlOptions options);
-		void executeAsTransaction(Dex.Multi multi, Dex.DmlOptions options);
+		void insertAll(SObject[] records, Dex.DMLOptions options);
+		void updateAll(SObject[] records, Dex.DMLOptions options);
+		void upsertAll(SObject[] records, Dex.DMLOptions options);
+		void softDeleteAll(SObject[] records, Dex.DMLOptions options);
+		void hardDeleteAll(SObject[] records, Dex.DMLOptions options);
+		void undeleteAll(SObject[] records, Dex.DMLOptions options);
+		void execute(Dex.Multi multi);
+		void executeAsTransaction(Dex.Multi multi);
 	}
 
-	public enum DmlOperation {
+	public enum DmlOperationType {
 		OP_INSERT,
 		OP_UPDATE,
 		OP_UPSERT,
@@ -401,39 +412,39 @@ public abstract class Dex {
 	}
 
 	public class Multi {
-		private Map<Dex.DmlOperation, SObject[]> operations = new Map<Dex.DmlOperation, SObject[]>();
+		private Map<Dex.DmlOperationType, Dex.DmlOperation[]> operations = new Map<Dex.DmlOperationType, Dex.DmlOperation[]>();
 
-		public void insertAll(SObject[] records) {
-			this.addOperation(records, Dex.DmlOperation.OP_INSERT);
+		public void insertAll(SObject[] records, Dex.DMLOptions options) {
+			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_INSERT, options));
 		}
 
-		public void updateAll(SObject[] records) {
-			this.addOperation(records, Dex.DmlOperation.OP_UPDATE);
+		public void updateAll(SObject[] records, Dex.DMLOptions options) {
+			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UPDATE, options));
 		}
 
-		public void upsertAll(SObject[] records) {
-			this.addOperation(records, Dex.DmlOperation.OP_UPSERT);
+		public void upsertAll(SObject[] records, Dex.DMLOptions options) {
+			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UPSERT, options));
 		}
 
-		public void softDeleteAll(SObject[] records) {
-			this.addOperation(records, Dex.DmlOperation.OP_SOFT_DELETE);
+		public void softDeleteAll(SObject[] records, Dex.DMLOptions options) {
+			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_SOFT_DELETE, options));
 		}
 
-		public void hardDeleteAll(SObject[] records) {
-			this.addOperation(records, Dex.DmlOperation.OP_HARD_DELETE);
+		public void hardDeleteAll(SObject[] records, Dex.DMLOptions options) {
+			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_HARD_DELETE, options));
 		}
 
-		public void undeleteAll(SObject[] records) {
-			this.addOperation(records, Dex.DmlOperation.OP_UNDELETE);
+		public void undeleteAll(SObject[] records, Dex.DMLOptions options) {
+			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UNDELETE, options));
 		}
 
-		private void addOperation(SObject[] records, Dex.DmlOperation operation) {
-			if (!operations.containsKey(operation)) {
-				operations.put(operation, new List<SObject>{
+		private void addOperation(Dex.DmlOperation operation) {
+			if (!operations.containsKey(operation.type)) {
+				operations.put(operation.type, new Dex.DmlOperation[]{
 				});
 			}
 
-			operations.get(operation).addAll(records);
+			operations.get(operation.type).add(operation);
 		}
 	}
 
@@ -485,11 +496,13 @@ public abstract class Dex {
 	}
 
 	public class DMLOptions {
+		private System.UUID uuid;
 		public Dex.SHARING_RULE sharingRule;
 		public System.AccessLevel accessLevel;
 		public Database.DMLOptions systemOptions;
 
 		public DMLOptions() {
+			this.uuid = System.UUID.randomUUID();
 			this.sharingRule = DEFAULT_SHARING_RULE;
 			this.accessLevel = DEFAULT_ACCESS_LEVEL;
 			this.systemOptions = new Database.DMLOptions();
@@ -506,34 +519,46 @@ public abstract class Dex {
 			this.systemOptions = systemOptions;
 		}
 
-		public Dex.DmlOptions withSharing() {
+		public Dex.DMLOptions withSharing() {
 			this.sharingRule = Dex.SHARING_RULE.WITH_SHARING;
 			return this;
 		}
 
-		public Dex.DmlOptions withoutSharing() {
+		public Dex.DMLOptions withoutSharing() {
 			this.sharingRule = Dex.SHARING_RULE.WITHOUT_SHARING;
 			return this;
 		}
 
-		public Dex.DmlOptions inheritedSharing() {
+		public Dex.DMLOptions inheritedSharing() {
 			this.sharingRule = Dex.SHARING_RULE.INHERITED_SHARING;
 			return this;
 		}
 
-		public Dex.DmlOptions asUser() {
+		public Dex.DMLOptions asUser() {
 			this.accessLevel = System.AccessLevel.USER_MODE;
 			return this;
 		}
 
-		public Dex.DmlOptions asSystem() {
+		public Dex.DMLOptions asSystem() {
 			this.accessLevel = System.AccessLevel.SYSTEM_MODE;
 			return this;
 		}
 
-		public Dex.DmlOptions withSystemOptions(Database.DMLOptions systemOptions) {
+		public Dex.DMLOptions withSystemOptions(Database.DMLOptions systemOptions) {
 			this.systemOptions = systemOptions;
 			return this;
+		}
+	}
+
+	private class DmlOperation {
+		public Dex.DmlOperationType type;
+		public Dex.DMLOptions options;
+		public SObject[] records;
+
+		public DmlOperation(SObject[] records, Dex.DmlOperationType operation, Dex.DMLOptions options) {
+			this.records = records;
+			this.type = operation;
+			this.options = options;
 		}
 	}
 }
