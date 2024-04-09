@@ -386,14 +386,15 @@ public abstract class Dex {
 	}
 
 	public class Multi {
-		private Map<Dex.DmlOperationType, Dex.DmlOperation[]> operations = new Map<Dex.DmlOperationType, Dex.DmlOperation[]>();
+		private Dex.DmlOperation[] operations =
+				new Dex.DmlOperation[]{};
 
 		public void insertAll(SObject[] records) {
 			this.insertAll(records, DEFAULT_DML_OPTS);
 		}
 
 		public void insertAll(SObject[] records, Dex.DMLOptions options) {
-			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_INSERT, options));
+			this.operations.add(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_INSERT, options));
 		}
 
 		public void updateAll(SObject[] records) {
@@ -401,7 +402,7 @@ public abstract class Dex {
 		}
 
 		public void updateAll(SObject[] records, Dex.DMLOptions options) {
-			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UPDATE, options));
+			this.operations.add(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UPDATE, options));
 		}
 
 		public void upsertAll(SObject[] records) {
@@ -409,7 +410,7 @@ public abstract class Dex {
 		}
 
 		public void upsertAll(SObject[] records, Dex.DMLOptions options) {
-			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UPSERT, options));
+			this.operations.add(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UPSERT, options));
 		}
 
 		public void softDeleteAll(SObject[] records) {
@@ -417,7 +418,7 @@ public abstract class Dex {
 		}
 
 		public void softDeleteAll(SObject[] records, Dex.DMLOptions options) {
-			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_SOFT_DELETE, options));
+			this.operations.add(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_SOFT_DELETE, options));
 		}
 
 		public void hardDeleteAll(SObject[] records) {
@@ -425,7 +426,7 @@ public abstract class Dex {
 		}
 
 		public void hardDeleteAll(SObject[] records, Dex.DMLOptions options) {
-			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_HARD_DELETE, options));
+			this.operations.add(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_HARD_DELETE, options));
 		}
 
 		public void undeleteAll(SObject[] records) {
@@ -433,7 +434,7 @@ public abstract class Dex {
 		}
 
 		public void undeleteAll(SObject[] records, Dex.DMLOptions options) {
-			this.addOperation(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UNDELETE, options));
+			this.operations.add(new Dex.DmlOperation(records, Dex.DmlOperationType.OP_UNDELETE, options));
 		}
 
 		public void execute() {
@@ -453,41 +454,11 @@ public abstract class Dex {
 
 		private void executeDmlOperations() {
 			Dex.DmlOperationType[] operationTypes = Dex.DmlOperationType.values();
+
 			for (Dex.DmlOperationType operationType : operationTypes) {
-				Dex.DmlOperation[] operations = this.operations.get(operationType);
 
-				if(operations == null) {
-					continue;
-				}
-
-				Map<System.UUID, Dex.DmlOperation> operationByDmlOptionId = new Map<System.UUID, Dex.DmlOperation>();
-				for (Dex.DmlOperation operation : operations) {
-					System.UUID dmlOptionsUuid = operation.options.uuid;
-					if (!operationByDmlOptionId.containsKey(dmlOptionsUuid)) {
-						operationByDmlOptionId.put(
-								dmlOptionsUuid,
-								new Dex.DmlOperation(new SObject[]{
-								}, operation.type, operation.options)
-						);
-					}
-
-					operationByDmlOptionId.get(dmlOptionsUuid).records.addAll(operation.records);
-				}
-
-				for (System.UUID dmlOptionUuid : operationByDmlOptionId.keySet()) {
-					Dex.DmlOperation operation = operationByDmlOptionId.get(dmlOptionUuid);
-					getRepo(operation.options.sharingRule).executeDmlOperation(operation);
-				}
-			}
-		}
-
-		private void addOperation(Dex.DmlOperation operation) {
-			if (!operations.containsKey(operation.type)) {
-				operations.put(operation.type, new Dex.DmlOperation[]{
-				});
 			}
 
-			operations.get(operation.type).add(operation);
 		}
 	}
 
@@ -611,15 +582,106 @@ public abstract class Dex {
 		}
 	}
 
-	private class DmlOperation {
+	// loop operationType
+	// loop DmlOptions
+	// Chunk records by SObjectType and Relationships
+	// when a record has a pending relationship, add the child to the next chunk
+	// for each chunk, fill child's parentId field
+	// store relationship graph in Multi or build at execute
+
+	public class DmlOperation {
 		public Dex.DmlOperationType type;
 		public Dex.DMLOptions options;
-		public SObject[] records;
+		public Set<SObjectType> sObjectTypes {
+			get;
+			private set;
+		}
+		public SObject[] records {
+			get;
+			private set;
+		}
 
 		public DmlOperation(SObject[] records, Dex.DmlOperationType operation, Dex.DMLOptions options) {
 			this.records = records;
 			this.type = operation;
 			this.options = options;
+			this.sObjectTypes = new Set<SObjectType>();
+			this.determineSObjectTypes(records);
+		}
+
+		public void addRecords(SObject[] records) {
+			this.records.addAll(records);
+			this.determineSObjectTypes(records);
+		}
+
+		private void determineSObjectTypes(SObject[] records) {
+			if(records.getSObjectType() != null) {
+				this.sObjectTypes.add(records.getSObjectType());
+			} else {
+				for(SObject record : records) {
+					if(!this.sObjectTypes.contains(record.getSObjectType())) {
+						this.sObjectTypes.add(record.getSObjectType());
+					}
+				}
+			}
+		}
+	}
+
+
+	public class Entity {
+		public SObject record {
+			get;
+			private set;
+		}
+
+		public EntityRelationship[] pendingRelationships = new EntityRelationship[]{};
+
+		public Boolean isPendingRelationships {
+			get {
+				return !this.pendingRelationships.isEmpty();
+			}
+			private set;
+		}
+
+
+		public Entity(SObject record) {
+			this.record = record;
+		}
+
+		public void addRelationship(SObjectField relationshipField, SObject relatedRecord) {
+			this.pendingRelationships.add(new EntityRelationship(relationshipField, relatedRecord));
+		}
+
+		public void addRelationship(Map<SObjectField, SObject> parentRecordsByField) {
+			for(SObjectField field : parentRecordsByField.keySet()) {
+				this.pendingRelationships.add(
+						new EntityRelationship(field, parentRecordsByField.get(field))
+				);
+			}
+		}
+
+		public void resolveRelationships() {
+			for(Integer i = this.pendingRelationships.size() - 1; i >= 0 ; --i) {
+				EntityRelationship relationship = this.pendingRelationships[i];
+
+				if(relationship.record.Id == null) {
+					continue;
+				}
+
+				this.record.put(relationship.relationshipField, relationship.record.Id);
+				this.pendingRelationships.remove(i);
+			}
+		}
+
+	}
+
+	public class EntityRelationship {
+		public SObject record;
+		public SObjectField relationshipField;
+
+		public EntityRelationship(SObjectField relationshipField, SObject relatedRecord) {
+			this.record = relatedRecord;
+			this.relationshipField = relationshipField;
 		}
 	}
 }
