@@ -24,12 +24,12 @@ public abstract class Dex {
 	// TODO: Add support for parent-child relationship inserts
 	// TODO: add interface to allow mocking dml statements and responses
 
-	// Database.SaveResult - insert, update
-	// Database.UpsertResult - upsert
-	// Database.DeleteResult - delete
-	// Database.UndeleteResult - undelete
-	// Database.EmptyRecycleBinResult - emptyRecyclingBin
-	// Database.rollback - Database.SavePoint
+	// Dex.getDatabase().SaveResult - insert, update
+	// Dex.getDatabase().UpsertResult - upsert
+	// Dex.getDatabase().DeleteResult - delete
+	// Dex.getDatabase().UndeleteResult - undelete
+	// Dex.getDatabase().EmptyRecycleBinResult - emptyRecyclingBin
+	// Dex.getDatabase().rollback - Dex.getDatabase().SavePoint
 
 
 	public enum SHARING_RULE {
@@ -38,6 +38,7 @@ public abstract class Dex {
 		WITHOUT_SHARING
 	}
 
+	@TestVisible
 	private final static Map<SHARING_RULE, System.Type> REPOS_BY_SHARING_RULES = new Map<SHARING_RULE, System.Type>{
 		SHARING_RULE.INHERITED_SHARING => InheritedSharingRepo.class,
 		SHARING_RULE.WITHOUT_SHARING => WithoutSharingRepo.class,
@@ -48,6 +49,7 @@ public abstract class Dex {
 
 	private static IRepository mockInstance;
 
+	@TestVisible
 	private static IRepository getRepo(SHARING_RULE sharingRule) {
 		if (mockInstance != null) {
 			return mockInstance;
@@ -66,6 +68,21 @@ public abstract class Dex {
 	@TestVisible
 	private static void setMock(IRepository mockRepo) {
 		mockInstance = mockRepo;
+	}
+
+	private static IDexDatabase databaseInstance;
+
+	private static IDexDatabase getDatabase() {
+		if(databaseInstance == null) {
+			databaseInstance = new DexDatabase();
+		}
+		
+		return databaseInstance;
+	}
+	
+	@TestVisible
+	private static void setMock(IDexDatabase mockDatabase) {
+		databaseInstance = mockDatabase;
 	}
 
 	public static SObject one(String query) {
@@ -163,7 +180,7 @@ public abstract class Dex {
 			String query,
 			Dex.QueryOptions options
 		) {
-			return getOneResults(Database.queryWithBinds(
+			return getOneResults(Dex.getDatabase().queryWithBinds(
 				maybeLimitByOne(query),
 				options.binds,
 				options.accessLevel
@@ -171,16 +188,16 @@ public abstract class Dex {
 		}
 
 		public Integer count(String query, Dex.QueryOptions options) {
-			return Database.countQueryWithBinds(query, options.binds, options.accessLevel);
+			return Dex.getDatabase().countQueryWithBinds(query, options.binds, options.accessLevel);
 		}
 
 		public SObject[] all(String query, Dex.QueryOptions options) {
-			return Database.queryWithBinds(query, options.binds, options.accessLevel);
+			return Dex.getDatabase().queryWithBinds(query, options.binds, options.accessLevel);
 		}
 
 		public Dex.AggregateResult[] aggregate(String query, Dex.QueryOptions options) {
 			return Dex.aggregateResults(
-				(Schema.AggregateResult[]) Database.queryWithBinds(query, options.binds, options.accessLevel)
+				(Schema.AggregateResult[]) Dex.getDatabase().queryWithBinds(query, options.binds, options.accessLevel)
 			);
 		}
 
@@ -214,45 +231,38 @@ public abstract class Dex {
 			for (Dex.RecordChunk chunk : chunks) {
 				switch on operation.type {
 					when OP_INSERT {
-						Database.insert(
+						Dex.getDatabase().insertAll(
 								chunk.records,
 								operation.options.systemOptions,
 								operation.options.accessLevel
 						);
 					}
 					when OP_UPDATE {
-						Database.update(
+						Dex.getDatabase().updateAll(
 								chunk.records,
 								operation.options.systemOptions,
 								operation.options.accessLevel
 						);
 					}
-					when OP_UPSERT {
-						Database.upsert(
-								chunk.records,
-								operation.options.systemOptions.optAllOrNone,
-								operation.options.accessLevel
-						);
-					}
 					when OP_SOFT_DELETE {
-						Database.delete(
+						Dex.getDatabase().deleteAll(
 								chunk.records,
-								operation.options.systemOptions.optAllOrNone,
+								operation.options.systemOptions,
 								operation.options.accessLevel
 						);
 					}
 					when OP_HARD_DELETE {
-						Database.delete(
+						Dex.getDatabase().deleteAll(
 								chunk.records,
-								operation.options.systemOptions.optAllOrNone,
+								operation.options.systemOptions,
 								operation.options.accessLevel
 						);
-						Database.emptyRecycleBin(chunk.records);
+						Dex.getDatabase().emptyRecycleBin(chunk.records);
 					}
 					when OP_UNDELETE {
-						Database.undelete(
+						Dex.getDatabase().undeleteAll(
 								chunk.records,
-								operation.options.systemOptions.optAllOrNone,
+								operation.options.systemOptions,
 								operation.options.accessLevel
 						);
 					}
@@ -442,12 +452,12 @@ public abstract class Dex {
 		}
 
 		public void executeAsTransaction() {
-			System.Savepoint savepoint = Database.setSavepoint();
+			System.Savepoint savepoint = Dex.getDatabase().setSavepoint();
 			try {
 				this.executeDmlOperations();
-				Database.releaseSavepoint(savepoint);
+				Dex.getDatabase().releaseSavepoint(savepoint);
 			} catch (Exception e) {
-				Database.rollback(savepoint);
+				Dex.getDatabase().rollback(savepoint);
 				throw e;
 			}
 		}

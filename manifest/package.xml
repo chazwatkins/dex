@@ -2,7 +2,10 @@
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
         <members>Dex</members>
+        <members>DexDatabase</members>
         <members>DexTest</members>
+        <members>IDexDatabase</members>
+        <members>IDexSystemDatabase</members>
         <name>ApexClass</name>
     </types>
     <version>59.0</version>
